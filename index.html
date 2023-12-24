@@ -184,7 +184,7 @@ function toUpperCaseVietnamese(str) {
   for (var i = 1; i < rows.length; i++) {
     var rowData = [];
     var cells = rows[i].getElementsByTagName("td");
-    for (var j = 0; j < cells.length - 1; j++) {
+    for (var j = 0; j < cells.length - 2; j++) { 
       if (j === 0) {
         rowData.push(cells[j].innerText);
       } else {
@@ -192,6 +192,8 @@ function toUpperCaseVietnamese(str) {
         rowData.push(input ? input.value : "");
       }
     }
+    var totalCell = rows[i].getElementsByTagName("td")[5].innerText;
+    rowData.push(totalCell);
     data.push(rowData);
   }
 
@@ -199,20 +201,12 @@ function toUpperCaseVietnamese(str) {
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Điểm kiểm tra");
 
-  var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-  var buf = new ArrayBuffer(wbout.length);
-  var view = new Uint8Array(buf);
-  for (var k = 0; k < wbout.length; k++) {
-    view[k] = wbout.charCodeAt(k) & 0xFF;
-  }
+  var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
   var fileName = "danh_sach_diem_BCIC.xlsx";
-  var file = new Blob([buf], { type: "application/octet-stream" });
-  saveAs(file, fileName);
+  var blob = new Blob([wbout], { type: "application/octet-stream" });
+  saveAs(blob, fileName);
 }
-
-
-
 document.getElementById('studentName').addEventListener('keyup', function(event) {
   if (event.key === 'Enter') {
     addStudent();
