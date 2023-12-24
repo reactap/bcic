@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>BCIC - Bảng Điểm</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .jumbotron {
+      background-color: #fff;
+      border-radius: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 5px;
+    }
+
+    table {
+      width: 100%;
+    }
+
+    th, td {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    th:nth-child(1) {
+      width: 20%;
+    }
+
+    th, td:not(:last-child) {
+      min-width: 80px;
+    }
+
+    th:nth-child(n+6),
+    td:nth-child(n+6) {
+      width: 10%;
+    }
+
+    input[type="number"] {
+      width: 80px;
+      text-align: center;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <div class="jumbotron p-4 shadow">
+      <h1 class="display-4">Bảng điểm thành viên BCIC</h1>
+      <div class="input-group mb-3">
+        <input type="text" id="studentName" class="form-control" placeholder="Nhập tên thí sinh">
+        <div class="input-group-append">
+          <button class="btn btn-primary" onclick="addStudent()" id="addButton">Thêm thí sinh</button>
+          <button class="btn btn-warning" onclick="toggleLock()" id="lockButton">Khoá danh sách</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead class="thead-light">
+            <tr>
+              <th>Họ và tên</th>
+              <th>Bài 1</th>
+              <th>Bài 2</th>
+              <th>Bài 3</th>
+              <th>Bài 4</th>
+              <th>Tổng điểm</th>
+              <th>Xoá</th>
+            </tr>
+          </thead>
+          <tbody id="scoreTableBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-success mt-3" onclick="exportToExcel()">Xuất File</button>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script>
+    var locked = false;
+
+    function addStudent() {
+  if (locked) {
+    alert("Danh sách đã khoá.");
+    return;
+  }
+
+  var name = document.getElementById('studentName').value.trim();
+  if (name === '') {
+    alert("Vui lòng nhập tên thí sinh.");
+    return;
+  }
+
+  if (!isNaN(name)) {
+    alert("Tên thí sinh không thể là số.");
+    return;
+  }
+
+  name = toUpperCaseVietnamese(name);
+
+  var table = document.getElementById('scoreTableBody');
+  for (var i = 0; i < table.rows.length; i++) {
+    if (table.rows[i].cells[0].innerHTML.toLowerCase() === name.toLowerCase()) {
+      alert("Tên thí sinh đã tồn tại trong danh sách.");
+      return;
+    }
+  }
+
+  var row = table.insertRow(-1);
+  var cell1 = row.insertCell(0);
+  cell1.innerHTML = name;
+  for (var j = 1; j <= 4; j++) {
+    var cell = row.insertCell(j);
+    cell.innerHTML = '<input type="number" onchange="calculateTotal()">';
+  }
+  var totalCell = row.insertCell(5);
+  totalCell.innerHTML = '0';
+
+  var deleteCell = row.insertCell(6);
+  var deleteBtn = document.createElement("button");
+  deleteBtn.className = "btn btn-danger";
+  deleteBtn.innerHTML = "Xoá";
+  deleteBtn.onclick = function() {
+    if (!locked) {
+      var currentRow = this.parentNode.parentNode;
+      currentRow.parentNode.removeChild(currentRow);
+      calculateTotal();
+    }
+  };
+  deleteCell.appendChild(deleteBtn);
+
+  document.getElementById('studentName').value = '';
+}
+
+function toUpperCaseVietnamese(str) {
+  return str.toUpperCase();
+}
+
+
+    function calculateTotal() {
+      var table = document.getElementById('scoreTableBody');
+      for (var i = 0; i < table.rows.length; i++) {
+        var total = 0;
+        for (var j = 1; j <= 4; j++) {
+          var cell = table.rows[i].cells[j].getElementsByTagName('input')[0];
+          if (!isNaN(cell.value) && cell.value !== '') {
+            total += parseInt(cell.value);
+          }
+        }
+        table.rows[i].cells[5].innerHTML = total;
+      }
+    }
+
+    function toggleLock() {
+      locked = !locked;
+      var lockButton = document.getElementById("lockButton");
+      lockButton.innerHTML = locked ? "Mở khoá" : "Khoá danh sách";
+      var addButton = document.getElementById("addButton");
+      addButton.disabled = locked;
+      var inputs = document.getElementsByTagName("input");
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = locked;
+      }
+    }
+
+    function exportToExcel() {
+  var table = document.getElementsByTagName("table")[0];
+  var rows = table.getElementsByTagName("tr");
+  var data = [
+    ["Họ và tên", "Bài 1", "Bài 2", "Bài 3", "Bài 4", "Tổng điểm"]
+  ];
+
+  for (var i = 1; i < rows.length; i++) {
+    var rowData = [];
+    var cells = rows[i].getElementsByTagName("td");
+    for (var j = 0; j < cells.length - 1; j++) {
+      if (j === 0) {
+        rowData.push(cells[j].innerText);
+      } else {
+        var input = cells[j].querySelector("input");
+        rowData.push(input ? input.value : "");
+      }
+    }
+    data.push(rowData);
+  }
+
+  var ws = XLSX.utils.aoa_to_sheet(data);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Điểm kiểm tra");
+
+  var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+  var buf = new ArrayBuffer(wbout.length);
+  var view = new Uint8Array(buf);
+  for (var k = 0; k < wbout.length; k++) {
+    view[k] = wbout.charCodeAt(k) & 0xFF;
+  }
+
+  var fileName = "danh_sach_diem_BCIC.xlsx";
+  var file = new Blob([buf], { type: "application/octet-stream" });
+  saveAs(file, fileName);
+}
+
+
+
+document.getElementById('studentName').addEventListener('keyup', function(event) {
+  if (event.key === 'Enter') {
+    addStudent();
+  }
+});
+
+document.getElementById('scoreTableBody').addEventListener('keyup', function(event) {
+  if (event.key === 'Enter') {
+    var activeElement = document.activeElement; 
+    var inputs = document.getElementsByTagName('input');
+
+   
+    var index = Array.from(inputs).indexOf(activeElement);
+    
+    if (index !== -1) {
+      
+      if (index < 4) {
+        inputs[index + 1].focus();
+      } else {
+        activeElement.blur();
+      }
+    }
+  }
+});
+
+
+
+  </script>
+</body>
+</html>
